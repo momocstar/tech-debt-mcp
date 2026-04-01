@@ -2,6 +2,7 @@ import os
 import hashlib
 from collections import defaultdict
 from models import DebtItem, DebtType
+from config import get_long_method_lines, get_god_class_methods, get_god_class_lines, get_duplicate_block_size
 
 def detect_code_smells(project_path: str, max_items: int = 20) -> dict:
     """
@@ -69,7 +70,7 @@ def _detect_long_methods_ast(project_path: str) -> list:
                         end_line = _find_method_end(content, start_line)
                         length = end_line - start_line + 1
 
-                        if length > 50:  # 长方法阈值
+                        if length > get_long_method_lines():  # 长方法阈值（可配置）
                             items.append(DebtItem(
                                 id=f"{filepath}:{node.name}",
                                 type=DebtType.LONG_METHOD,
@@ -128,7 +129,7 @@ def _detect_long_methods_fallback(project_path: str) -> list:
                         # 方法结束
                         if brace_count == 0 and '{' in line:
                             length = i - method_start + 1
-                            if length > 50:
+                            if length > get_long_method_lines():  # 长方法阈值（可配置）
                                 items.append(DebtItem(
                                     id=f"{filepath}:{method_name}",
                                     type=DebtType.LONG_METHOD,
@@ -235,7 +236,7 @@ def _detect_god_classes_ast(project_path: str) -> list:
                 line_count = len(content.split('\n'))
 
                 # 判断是否为上帝类
-                if method_count > 20 or line_count > 500:
+                if method_count > get_god_class_methods() or line_count > get_god_class_lines():
                     class_name = filename.replace('.java', '')
 
                     # 获取类声明的位置
@@ -285,7 +286,7 @@ def _detect_god_classes_fallback(project_path: str) -> list:
                 # 统计行数
                 line_count = len(content.split('\n'))
 
-                if method_count > 20 or line_count > 500:
+                if method_count > get_god_class_methods() or line_count > get_god_class_lines():
                     class_name = filename.replace('.java', '')
                     items.append(DebtItem(
                         id=f"{filepath}:{class_name}",
@@ -330,9 +331,10 @@ def _detect_duplicates(project_path: str) -> list:
                         not stripped.startswith('package ')):
                         lines.append(stripped)
 
-                # 检测10行的重复块
-                for i in range(len(lines) - 10):
-                    block = '\n'.join(lines[i:i+10])
+                # 检测重复代码块
+                block_size = get_duplicate_block_size()
+                for i in range(len(lines) - block_size):
+                    block = '\n'.join(lines[i:i+block_size])
                     # 标准化：去除多余空格
                     block = ' '.join(block.split())
                     block_hash = hashlib.md5(block.encode()).hexdigest()
@@ -357,7 +359,7 @@ def _detect_duplicates(project_path: str) -> list:
                     entity_name=f"重复代码块 (出现 {len(locations)} 次)",
                     complexity=len(locations),
                     start_line=line,
-                    end_line=line + 10,
+                    end_line=line + block_size,
                     custom_notes=f"在 {len(locations)} 个位置重复出现"
                 ))
                 seen_blocks.add(filepath)

@@ -2,6 +2,16 @@
 
 基于 MCP (Model Context Protocol) 的技术债务量化与治理工具。
 
+## 配置说明
+
+📋 **[查看完整配置文档](CONFIG.md)**
+
+支持通过环境变量自定义所有检测参数：
+- 复杂度阈值
+- 代码坏味检测阈值
+- 债务指数权重
+- 性能参数
+
 ## 功能特性
 
 - **复杂度分析** - 支持多语言（Java、Python、JavaScript、TypeScript、Go、C/C++）
