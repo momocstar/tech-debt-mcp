@@ -12,7 +12,7 @@ class DashboardGenerator:
     """仪表板生成器"""
 
     @staticmethod
-    def generate_html_report(data: Dict, output_path: str, title: str = "技术债务分析报告") -> str:
+    def generate_html_report(data: Dict, output_path: str, title: str = "技术债务分析报告"):
         """
         生成 HTML 仪表板报告
 
@@ -21,6 +21,8 @@ class DashboardGenerator:
             output_path: 输出文件路径
             title: 报告标题
         """
+        items_json = json.dumps(data.get('items', []), ensure_ascii=False)
+
         html_content = f"""<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -54,7 +56,7 @@ class DashboardGenerator:
         }}
         .stats-grid {{
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr);
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }}
@@ -63,6 +65,7 @@ class DashboardGenerator:
             padding: 20px;
             border-radius: 8px;
             text-align: center;
+            border: 1px solid #e0e0e0;
         }}
         .stat-card h3 {{
             margin: 0;
@@ -80,6 +83,7 @@ class DashboardGenerator:
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
         }}
         .chart-container h2 {{
             color: #2c3e50;
@@ -105,12 +109,16 @@ class DashboardGenerator:
         }}
         .priority-high {{
             background-color: #fee;
+            color: #c00;
+            font-weight: bold;
         }}
         .priority-medium {{
             background-color: #fff9e6;
+            color: #c90;
         }}
         .priority-low {{
             background-color: #e8f5e8;
+            color: #090;
         }}
     </style>
 </head>
@@ -121,7 +129,7 @@ class DashboardGenerator:
         <div class="stats-grid">
             <div class="stat-card">
                 <h3>总债务项</h3>
-                <p id="total-items">{0}</p>
+                <p id="total-items">0</p>
             </div>
 
             <div class="stat-card">
@@ -172,11 +180,11 @@ class DashboardGenerator:
 
     <script>
         // 数据处理
-        const items = {items};
+        const items = {items_json};
         const totalItems = items.length;
         const highPriority = items.filter(i => i.debt_score >= 0.5).length;
-        const avgComplexity = items.reduce((sum, i) => sum + i.complexity, 0) / items.length;
-        const totalModifications = items.reduce((sum, i) => sum + i.modification_frequency || 0, 0);
+        const avgComplexity = items.reduce((sum, i) => sum + (i.complexity || 0), 0) / items.length;
+        const totalModifications = items.reduce((sum, i) => sum + (i.modification_frequency || 0), 0);
 
         // 更新统计数据
         document.getElementById('total-items').textContent = totalItems;
@@ -186,63 +194,78 @@ class DashboardGenerator:
 
         // 类型分布图表
         const typeCtx = document.getElementById('typeChart').getContext('2d');
-        const typeChart = new Chart(typeCtx, {
+        const typeData = items.reduce((acc, item) => {{
+            acc[item.type] = (acc[item.type] || 0) + 1;
+            return acc;
+        }}, {{}});
+
+        new Chart(typeCtx, {{
             type: 'doughnut',
-            data: Object.entries(
-                items.reduce((acc, item) => {
-                    acc[item.type] = (acc[item.type] || 0) + 1;
-                    return acc;
-                }, {})
-            ),
+            data: {{
+                labels: Object.keys(typeData),
+                datasets: [{{
+                    data: Object.values(typeData),
+                    backgroundColor: [
+                        '#FF6384',
+                        '#36A2EB',
+                        '#FFCE56',
+                        '#4BC0C0',
+                        '#9966FF',
+                        '#FF9F40'
+                    ]
+                }}]
+            }},
             options: {{
                 responsive: true,
                 plugins: {{
-                    legend: {
-                        position: 'right',
-                        labels: Object.keys(items.reduce((acc, item) => {
-                            acc[item.type] = (acc[item.type] || 'Unknown');
-                            return label;
-                        }, {}))
-                    }
-                }
-            }
-        });
+                    legend: {{
+                        position: 'right'
+                    }}
+                }}
+            }}
+        }});
 
         // 复杂度分布图表
         const complexityCtx = document.getElementById('complexityChart').getContext('2d');
-        const complexityChart = new Chart(complexityCtx, {
+        const topItems = items.slice(0, 10);
+
+        new Chart(complexityCtx, {{
             type: 'bar',
-            data: items.slice(0, 10).map((item, index) => ({
-                x: index,
-                y: item.complexity || 0,
-                label: item.entity_name
-            })),
-            options: {
+            data: {{
+                labels: topItems.map(item => item.entity_name),
+                datasets: [{{
+                    label: '复杂度',
+                    data: topItems.map(item => item.complexity || 0),
+                    backgroundColor: '#36A2EB'
+                }}]
+            }},
+            options: {{
                 responsive: true,
                 scales: {{
                     y: {{
                         beginAtZero: true
-                    }
-                }
-            }
-        });
+                    }}
+                }}
+            }}
+        }});
 
-        // 巻加表格行
+        // 添加表格行
         const tbody = document.getElementById('debt-table');
-        items.slice(0, 10).forEach((item, index) => {
+        items.slice(0, 10).forEach((item, index) => {{
             const priority = item.debt_score >= 0.5 ? 'high' : item.debt_score >= 0.3 ? 'medium' : 'low';
+            const priorityText = priority === 'high' ? '高' : priority === 'medium' ? '中' : '低';
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>{index + 1}</td>
-                <td>${item.type}</td>
-                <td title="${item.file_path}">${item.file_path.split('/').pop()}</td>
-                <td>${item.entity_name}</td>
-                <td>${item.complexity}</td>
-                <td>${item.debt_score.toFixed(2)}</td>
-                <td class="priority-${priority}">${priority}</td>
+                <td>${{index + 1}}</td>
+                <td>${{item.type}}</td>
+                <td title="${{item.file_path}}">${{item.file_path.split('/').pop()}}</td>
+                <td>${{item.entity_name}}</td>
+                <td>${{item.complexity}}</td>
+                <td>${{(item.debt_score || 0).toFixed(2)}}</td>
+                <td class="priority-${{priority}}">${{priorityText}}</td>
             `;
             tbody.appendChild(row);
-        });
+        }});
     </script>
 </body>
 </html>
@@ -255,15 +278,11 @@ class DashboardGenerator:
 
 
 if __name__ == "__main__":
-    import sys
-
-    from pathlib import Path
-
     # 示例数据
     sample_data = {
         "items": [
             {
-                "type': 'complex_method',
+                'type': 'complex_method',
                 'file_path': '/path/to/File1.java',
                 'entity_name': 'ComplexMethod',
                 'complexity': 25,

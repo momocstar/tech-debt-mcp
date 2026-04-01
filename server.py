@@ -13,6 +13,10 @@ from tools.prioritize import prioritize_debt
 from tools.roadmap import generate_roadmap
 from tools.sonarqube import get_sonarqube_metrics
 from tools.ai_suggestions import generate_refactor_suggestions
+from tools.advanced_smells import detect_advanced_smells
+from tools.incremental_analyzer import IncrementalAnalyzer
+from exporters import OutputFormatter
+from dashboard import DashboardGenerator
 sys.path.insert(0, os.path.dirname(__file__))
 
 server = Server("tech-debt")
@@ -110,6 +114,67 @@ async def list_tools() -> List[Tool]:
                 },
                 "required": ["items_json"]
             }
+        ),
+        Tool(
+            name="detect_advanced_smells",
+            description="检测高级代码坏味（深层嵌套、魔法数字、长参数列表、数据类、过度注释）",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_path": {"type": "string", "description": "项目根目录路径"},
+                    "max_items": {"type": "integer", "description": "返回的最大项数，默认20"}
+                },
+                "required": ["project_path"]
+            }
+        ),
+        Tool(
+            name="run_incremental_analysis",
+            description="运行增量分析（基于上次状态，只分析变更文件）",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_path": {"type": "string", "description": "项目根目录路径"},
+                    "since_commit": {"type": "string", "description": "起始commit，如 HEAD~5"}
+                },
+                "required": ["project_path"]
+            }
+        ),
+        Tool(
+            name="run_full_analysis",
+            description="运行全量分析并保存状态",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "project_path": {"type": "string", "description": "项目根目录路径"}
+                },
+                "required": ["project_path"]
+            }
+        ),
+        Tool(
+            name="format_output",
+            description="格式化输出为多种格式（json/markdown/html/csv）",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "data_json": {"type": "string", "description": "要格式化的数据JSON"},
+                    "format": {"type": "string", "description": "输出格式：json, markdown, html, csv", "enum": ["json", "markdown", "html", "csv"]},
+                    "title": {"type": "string", "description": "报告标题"}
+                },
+                "required": ["data_json", "format"]
+            }
+        ),
+        Tool(
+            name="generate_dashboard",
+            description="生成可视化仪表板HTML报告",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "data_json": {"type": "string", "description": "债务数据JSON"},
+                    "output_path": {"type": "string", "description": "输出文件路径"},
+                    "title": {"type": "string", "description": "报告标题"}
+                },
+                "required": ["data_json", "output_path"]
+            }
         )
     ]
 
@@ -158,6 +223,47 @@ async def call_tool(name: str, arguments: dict) -> List[TextContent]:
             result = generate_refactor_suggestions(
                 items=json.loads(arguments["items_json"])
             )
+        elif name == "detect_advanced_smells":
+            result = detect_advanced_smells(
+                project_path=arguments["project_path"],
+                max_items=arguments.get("max_items", 20)
+            )
+        elif name == "run_incremental_analysis":
+            analyzer = IncrementalAnalyzer(arguments["project_path"])
+            result = analyzer.analyze_incremental(
+                since_commit=arguments.get("since_commit")
+            )
+        elif name == "run_full_analysis":
+            result = IncrementalAnalyzer.run_full_analysis(arguments["project_path"])
+        elif name == "format_output":
+            data = json.loads(arguments["data_json"])
+            format_type = arguments["format"]
+            title = arguments.get("title", "技术债务分析报告")
+
+            formatter = OutputFormatter()
+            if format_type == "json":
+                output = formatter.to_json(data, pretty=True)
+            elif format_type == "markdown":
+                output = formatter.to_markdown(data, title)
+            elif format_type == "html":
+                output = formatter.to_html(data, title)
+            elif format_type == "csv":
+                output = formatter.to_csv(data)
+            else:
+                return [TextContent(type="text", text=f"不支持的格式: {format_type}")]
+
+            result = {"output": output, "format": format_type}
+        elif name == "generate_dashboard":
+            data = json.loads(arguments["data_json"])
+            output_path = arguments["output_path"]
+            title = arguments.get("title", "技术债务分析报告")
+
+            dashboard = DashboardGenerator()
+            dashboard.generate_html_report(data, output_path, title)
+            result = {
+                "output_path": output_path,
+                "message": f"可视化仪表板已生成: {output_path}"
+            }
         else:
             return [TextContent(type="text", text=f"未知工具: {name}")]
 
@@ -211,6 +317,42 @@ def run_cli(args):
         result = generate_refactor_suggestions(
             items=json.loads(args.items_json)
         )
+    elif args.command == "advanced-smells":
+        result = detect_advanced_smells(
+            project_path=args.project_path,
+            max_items=args.max_items
+        )
+    elif args.command == "incremental":
+        analyzer = IncrementalAnalyzer(args.project_path)
+        result = analyzer.analyze_incremental(
+            since_commit=args.since_commit
+        )
+    elif args.command == "full-analysis":
+        result = IncrementalAnalyzer.run_full_analysis(args.project_path)
+    elif args.command == "format":
+        data = json.loads(args.data_json)
+        formatter = OutputFormatter()
+
+        if args.format == "json":
+            output = formatter.to_json(data, pretty=True)
+        elif args.format == "markdown":
+            output = formatter.to_markdown(data, args.title)
+        elif args.format == "html":
+            output = formatter.to_html(data, args.title)
+        elif args.format == "csv":
+            output = formatter.to_csv(data)
+        else:
+            output = f"不支持的格式: {args.format}"
+
+        result = {"output": output, "format": args.format}
+    elif args.command == "dashboard":
+        data = json.loads(args.data_json)
+        dashboard = DashboardGenerator()
+        dashboard.generate_html_report(data, args.output_path, args.title)
+        result = {
+            "output_path": args.output_path,
+            "message": f"可视化仪表板已生成: {args.output_path}"
+        }
     else:
         result = {"error": f"未知命令: {args.command}"}
 
@@ -262,6 +404,32 @@ def main():
     # suggestions 命令
     p_suggest = subparsers.add_parser("suggestions", help="生成AI重构建议")
     p_suggest.add_argument("--items-json", required=True, help="债务项JSON")
+
+    # advanced-smells 命令
+    p_advanced = subparsers.add_parser("advanced-smells", help="检测高级代码坏味")
+    p_advanced.add_argument("project_path", help="项目路径")
+    p_advanced.add_argument("--max-items", type=int, default=20, help="最大返回项数")
+
+    # incremental 命令
+    p_incremental = subparsers.add_parser("incremental", help="运行增量分析")
+    p_incremental.add_argument("project_path", help="项目路径")
+    p_incremental.add_argument("--since-commit", help="起始commit，如 HEAD~5")
+
+    # full-analysis 命令
+    p_full = subparsers.add_parser("full-analysis", help="运行全量分析")
+    p_full.add_argument("project_path", help="项目路径")
+
+    # format 命令
+    p_format = subparsers.add_parser("format", help="格式化输出")
+    p_format.add_argument("--data-json", required=True, help="数据JSON")
+    p_format.add_argument("--format", required=True, choices=["json", "markdown", "html", "csv"], help="输出格式")
+    p_format.add_argument("--title", default="技术债务分析报告", help="报告标题")
+
+    # dashboard 命令
+    p_dashboard = subparsers.add_parser("dashboard", help="生成可视化仪表板")
+    p_dashboard.add_argument("--data-json", required=True, help="债务数据JSON")
+    p_dashboard.add_argument("--output-path", required=True, help="输出文件路径")
+    p_dashboard.add_argument("--title", default="技术债务分析报告", help="报告标题")
 
     args = parser.parse_args()
 

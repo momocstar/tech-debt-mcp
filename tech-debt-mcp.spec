@@ -15,7 +15,7 @@ a = Analysis(
         # 包含 ckjm jar 文件
         ('ckjm-1.9.jar', '.'),
         # 包含 skill 文件
-        ('skill', 'skill'),
+        ('skills', 'skills'),
     ],
     hiddenimports=[
         'mcp',
