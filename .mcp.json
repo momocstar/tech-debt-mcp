@@ -1,0 +1,24 @@
+{
+  "skills": {
+    "paths": ["/Users/momoc/Desktop/skill/tech-debt-mcp/skills"]
+  },
+  "mcpServers": {
+    "dingtalk-doc-nodejs": {
+      "command": "node",
+      "args": [
+        " /Users/momoc/devTools/mcp-dingtalk-doc/nodejs/dist/index.js"
+      ],
+      "env": {
+        "DINGTALK_COOKIE": "dd_home_locale=zh-cn; cna=TjI3H1GpcUcCAXBeGkegVvyB; _tea_utm_cache_20001731={%22utm_source%22:%22search%22%2C%22utm_medium%22:%22main_vertical%22}; XSRF-TOKEN=67a17986-8f85-4894-bb85-ee3db350826a; account=oauth_k1%3ALa1NQc5hJ1XDEx29OAVO0qxWsrvwFY4tvIBo7Pq3skayGOF535%2FCDBBgYglo0tIfZdvAu%2BfdPEeU%2FZ9saaKLvPjFBdPDvctNnX8QaW7Kuuw%3D; deviceid=a2ed273eab9b408a925918339ceb11f6; pub_uid=whhGVYJnhe4KWMDQz5R7Iw%3D%3D; doc_atoken=MTM5OTM2MzgwOAMrHupfSBsnKsAlRhHhqdhCbDkptEQLiS; xlly_s=1; RECENT_OPEN_DOC_KEYS=4EZlweZVB3wWYqxA%2CmPdnpEb5oo3Zgqw9; isg=BISEEavascSmBAQlh6NmYqTZVQR2nagHBp7XDp4iys7LyQqT164zlkwqCWERUeBf; tfstk=g-bEbqvsjUXsJcwcgsYzuGsAHwLdbUyfta9WZ_fkOpv3vTayaOX-R32RAgkPMT8WR_2dUaJGCpg79efkqt1fOMgCzG3PM_QQ9UNpJ6LJr-wblT5d9UCQmZif8fAMZ1mHE3q6Sh0pFTwblr13xBL5s-sBIS0DNQYktpmns5RXgXYkqBfg_QASK00hE1VwBIoHE20oScAvaUvlE3VNsddkrBXkr55MBQcHoTXK7d-3tlkvSUkzJ8vftduorw4J-KyWFCKP7S-ph6bFXG_ZEHJctduzL0Hu8dAVS8HBeN5G-I6g528PsQW2g9kgQUC10TRV-Sm2U9CGRhb3Nmd9yMXes1erupjfMs9kxjgfUOfADeb3e29dq1bkCwVSzKjfMFROPR3HUGjlRHL-KJ8l_QjP6YdgkObRYYmkxCdwh5PNW7cROJfB5Dm-2hr9_KNYM0nJxKOwh5zn20KatCJbi11..; portal_corp_id=ding1b73037a645b63a535c2f4657eb6378f; user_preferences_setting={%22appearance%22:%22light%22}; ding_doc_unified_login=false",
+        "save_files": "true",
+        "output_dir": "/Users/momoc/devTools/mcp-dingtalk-doc/nodejs/documents"
+      }
+    },
+    "tech-debt": {
+      "command": "/Users/momoc/Desktop/skill/tech-debt-mcp/dist/tech-debt-mcp",
+      "env": {
+        "CKJM_JAR": "/Users/momoc/Desktop/skill/tech-debt-mcp/ckjm-1.9.jar"
+      }
+    }
+  }
+}

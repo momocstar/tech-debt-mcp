@@ -1,0 +1,7 @@
+mcp>=0.1.0
+lizard>=1.17.10
+radon>=6.0.1
+gitpython>=3.1.41
+python-sonarqube-api>=1.0.0
+requests>=2.31.0
+javalang>=0.13.0
