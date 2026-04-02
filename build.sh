@@ -29,6 +29,7 @@ echo ""
 echo "使用方法 - 更新 MCP 配置:"
 echo ""
 cat << 'EOF'
+提示： 将debt-visualizer目录拷贝到,~/.cluade/skills目录下
 {
   "mcpServers": {
     "tech-debt": {

@@ -506,7 +506,7 @@ Claude 会自动调用 MCP 工具和 Skill 完成分析。
        }
        // 其他验证逻辑
    }
-   ```
+```
 
 2. **提取方法：计算价格**
    ```java
@@ -602,67 +602,3 @@ Claude 会自动调用 MCP 工具和 Skill 完成分析。
 | InventoryService.check | 8 | 28% | 0.72 |
 
 相比默认权重，覆盖率低的模块排名明显上升。
-```
-
----
-
-## Skill 工作流详解
-
-`debt-visualizer` Skill 执行以下步骤：
-
-1. **数据源选择** - 询问用户：本地分析 或 SonarQube
-2. **分析模式** - 全量扫描 或 增量分析（指定 since_commit）
-3. **收集债务项** - 调用 compute_complexity + detect_code_smells
-4. **补充业务影响** - 从 Git 历史获取修改频率，询问核心模块
-5. **优先级排序** - 计算债务指数，按优先级排列
-6. **生成建议** - 可选生成 AI 重构建议
-7. **输出路线图** - 按 Sprint 规划治理计划
-8. **导出** - 可选导出 Jira CSV 格式
-
-## 项目结构
-
-```
-tech-debt-mcp/
-├── server.py              # MCP Server 入口
-├── models.py              # 数据模型
-├── utils.py               # 工具函数
-├── analyzers/             # 分析器模块
-│   ├── git_analyzer.py    # Git 历史分析
-│   ├── generic_lizard.py  # 多语言复杂度分析
-│   ├── python_radon.py    # Python 分析
-│   └── java_ckjm.py       # Java 分析
-├── tools/                 # MCP 工具实现
-├── skill/                 # Claude Code Skill
-├── docs/                  # 文档
-├── dist/                  # 构建输出
-└── requirements.txt       # 依赖
-```
-
-## 支持的语言
-
-| 语言 | 分析器 |
-|------|--------|
-| Java | Lizard / CKJM |
-| Python | Lizard / Radon |
-| JavaScript | Lizard |
-| TypeScript | Lizard |
-| Go | Lizard |
-| C/C++ | Lizard |
-
-## 环境变量
-
-| 变量 | 说明 |
-|------|------|
-| `CKJM_JAR` | CKJM jar 文件路径 |
-| `SONARQUBE_URL` | SonarQube 服务器地址 |
-| `SONARQUBE_TOKEN` | SonarQube 访问令牌 |
-| `ANTHROPIC_API_KEY` | Claude API 密钥（用于 AI 建议） |
-
-## 文档
-
-- [技术文档与使用教程](docs/TECHNICAL_DOCUMENTATION.md)
-- [案例介绍](docs/README.md)
-
-## License
-
-MIT

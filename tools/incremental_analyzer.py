@@ -58,12 +58,15 @@ class IncrementalAnalyzer:
             last_commit = self.state['last_commit']
 
             # 获取变更文件
-            changed_files = []
-            for item in repo.iter_commits(f'{last_commit}..HEAD'):
-                if item.a_path:
-                    changed_files.append(item.a_path)
+            changed_files = set()
+            for commit in repo.iter_commits(f'{last_commit}..HEAD'):
+                for diff in commit.diff(commit.parents[0] if commit.parents else None):
+                    if diff.a_path:
+                        changed_files.add(diff.a_path)
+                    if diff.b_path:
+                        changed_files.add(diff.b_path)
 
-            return changed_files
+            return list(changed_files)
         except Exception as e:
             print(f"获取变更文件失败: {e}")
             return None
@@ -84,58 +87,86 @@ class IncrementalAnalyzer:
         from tools.smells import detect_code_smells
 
         try:
-            # 检查是否已分析过这些文件
-            if self.state['last_commit']:
+            changed_files = []
+
+            # 如果指定了 since_commit，直接使用它
+            if since_commit:
+                try:
+                    repo = Repo(self.project_path)
+                    for commit in repo.iter_commits(f'{since_commit}..HEAD'):
+                        for diff in commit.diff(commit.parents[0] if commit.parents else None):
+                            if diff.a_path:
+                                changed_files.append(diff.a_path)
+                            if diff.b_path:
+                                changed_files.append(diff.b_path)
+                    # 转换为绝对路径
+                    changed_files = [os.path.join(self.project_path, f) for f in set(changed_files)]
+                except Exception as e:
+                    return {
+                        "error": f"获取变更文件失败: {str(e)}",
+                        "suggestion": "请检查 commit 引用是否正确"
+                    }
+            # 否则使用上次分析的状态
+            elif self.state['last_commit']:
                 changed_files = self.get_changed_files_since_last_analysis()
-
-                if changed_files:
-                    # 只分析变更的文件
-                    if progress_callback:
-                        progress_callback(0, len(changed_files), "获取变更文件列表...")
-
-                    result = compute_complexity(
-                        self.project_path,
-                        max_items=100,
-                        since_commit=None,
-                        progress_callback=progress_callback
-                    )
-
-                    # 合并结果
-                    all_items = result.get('items', [])
-                    for file in changed_files:
-                        file_result = detect_code_smells(
-                            os.path.dirname(file),
-                            max_items=5
-                        )
-                        if file_result.get('items'):
-                            all_items.extend(file_result['items'])
-
-                    if progress_callback:
-                        progress_callback(50, 100, f"分析完成， 共检测到 {len(all_items)} 个债务项")
-
-                    # 更新状态
-                    self.save_state(
-                        commit_hash='current',
-                        analysis_time=str(datetime.now().isoformat()),
-                        analyzed_files=changed_files
-                    )
-
-                    return {
-                        "items": [item.__dict__ if hasattr(item, '__dict__') else item for item in all_items],
-                        "total_count": len(all_items),
-                        "incremental": True,
-                        "changed_files": changed_files,
-                        "message": f"增量分析完成， 共分析 {len(changed_files)} 个变更文件"
-                    }
-                else:
-                    return {
-                        "error": "未找到变更文件",
-                        "suggestion": "使用 run_full_analysis() 进行全量分析"
-                    }
             else:
                 return {
-                    "error": "未找到上次分析记录， 请先进行全量分析",
+                    "error": "未找到上次分析记录，请先进行全量分析",
                     "suggestion": "使用 run_full_analysis() 进行全量分析"
+                }
+
+            if changed_files:
+                # 只分析变更的文件
+                if progress_callback:
+                    progress_callback(0, len(changed_files), "获取变更文件列表...")
+
+                result = compute_complexity(
+                    self.project_path,
+                    max_items=100,
+                    since_commit=since_commit,
+                    progress_callback=progress_callback
+                )
+
+                # 合并结果
+                all_items = result.get('items', [])
+                for file in changed_files:
+                    file_result = detect_code_smells(
+                        os.path.dirname(file),
+                        max_items=5
+                    )
+                    if file_result.get('items'):
+                        all_items.extend(file_result['items'])
+
+                if progress_callback:
+                    progress_callback(50, 100, f"分析完成，共检测到 {len(all_items)} 个债务项")
+
+                # 更新状态
+                try:
+                    repo = Repo(self.project_path)
+                    current_commit = repo.head.commit.hexsha
+                except Exception:
+                    current_commit = 'current'
+
+                self.save_state(
+                    commit_hash=current_commit,
+                    analysis_time=str(datetime.now().isoformat()),
+                    analyzed_files=changed_files
+                )
+
+                return {
+                    "items": [item.__dict__ if hasattr(item, '__dict__') else item for item in all_items],
+                    "total_count": len(all_items),
+                    "incremental": True,
+                    "changed_files": changed_files,
+                    "message": f"增量分析完成，共分析 {len(changed_files)} 个变更文件"
+                }
+            else:
+                return {
+                    "items": [],
+                    "total_count": 0,
+                    "incremental": True,
+                    "changed_files": [],
+                    "message": "没有发现变更文件"
                 }
         except Exception as e:
             return {
@@ -174,10 +205,17 @@ def run_full_analysis(project_path: str, progress_callback=None) -> Dict:
     if progress_callback:
         progress_callback(90, 100, f"分析完成, 共检测到 {len(all_items)} 个债务项")
 
+    # 获取当前 commit hash
+    try:
+        repo = Repo(project_path)
+        current_commit = repo.head.commit.hexsha
+    except Exception:
+        current_commit = 'full'
+
     # 保存状态
     analyzer = IncrementalAnalyzer(project_path)
     analyzer.save_state(
-        commit_hash='full',
+        commit_hash=current_commit,
         analysis_time=str(datetime.now().isoformat()),
         analyzed_files=[]
     )

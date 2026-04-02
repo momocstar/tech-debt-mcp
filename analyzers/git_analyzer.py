@@ -1,4 +1,5 @@
 # analyzers/git_analyzer.py (扩展)
+import os
 import git
 from collections import defaultdict
 
