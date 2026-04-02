@@ -33,3 +33,6 @@ nbdist/
 
 ### Worktrees ###
 .worktrees/
+**/**__pycache__
+__pycache__
+**__pycache__
