@@ -14,12 +14,61 @@ class DashboardGenerator:
     @staticmethod
     def generate_html_report(data: Dict, output_path: str, title: str = "技术债务分析报告"):
         """
-        生成 HTML 仪表板报告
+        生成 HTML 仪表板报告（使用新的前端架构）
 
         Args:
             data: 债务数据
             output_path: 输出文件路径
             title: 报告标题
+        """
+        import shutil
+
+        # 获取dashboard目录路径
+        dashboard_dir = os.path.join(os.path.dirname(__file__), 'dashboard')
+
+        # 如果dashboard目录存在，复制整个目录到输出位置
+        if os.path.exists(dashboard_dir):
+            output_dir = os.path.dirname(output_path)
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+
+            # 复制dashboard目录内容
+            target_dashboard_dir = os.path.join(output_dir, 'dashboard')
+            if os.path.exists(target_dashboard_dir):
+                shutil.rmtree(target_dashboard_dir)
+            shutil.copytree(dashboard_dir, target_dashboard_dir)
+
+            # 读取index.html模板
+            template_path = os.path.join(target_dashboard_dir, 'index.html')
+            with open(template_path, 'r', encoding='utf-8') as f:
+                html_content = f.read()
+
+            # 注入数据到HTML
+            items_json = json.dumps(data.get('items', []), ensure_ascii=False)
+            data_script = f'<script>window.dashboardData = {items_json};</script>'
+            html_content = html_content.replace('</head>', f'{data_script}</head>')
+
+            # 更新标题
+            html_content = html_content.replace('<title>技术债务分析报告</title>', f'<title>{title}</title>')
+            html_content = html_content.replace('<h1 class="navbar-brand mr-2">技术债务分析报告</h1>', f'<h1 class="navbar-brand mr-2">{title}</h1>')
+
+            # 写入输出文件
+            output_html_path = os.path.join(output_dir, 'dashboard.html')
+            with open(output_html_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+
+            print(f"✅ HTML 仪表板已生成: {output_html_path}")
+            print(f"📁 静态资源目录: {target_dashboard_dir}")
+
+        else:
+            # 如果dashboard目录不存在，使用旧的实现方式
+            print("⚠️  未找到dashboard目录，使用简化版本")
+            DashboardGenerator._generate_simple_html(data, output_path, title)
+
+    @staticmethod
+    def _generate_simple_html(data: Dict, output_path: str, title: str = "技术债务分析报告"):
+        """
+        生成简化版HTML（当dashboard目录不存在时的后备方案）
         """
         items_json = json.dumps(data.get('items', []), ensure_ascii=False)
 
