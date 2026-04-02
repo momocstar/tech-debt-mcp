@@ -9,7 +9,7 @@ description: 量化技术债务并生成治理路线图，支持多语言、Sona
 
 ### 步骤 0: 数据源选择
 询问用户："请选择技术债务数据来源：1) 本地分析（复杂度+坏味+覆盖率） 2) SonarQube"
-若选择 SonarQube，调用 `get_sonarqube_metrics_tool` 获取数据，并直接进入优先级排序。
+若选择 SonarQube，调用 `get_sonarqube_metrics` 获取数据，并直接进入优先级排序。
 
 ### 步骤 1: 收集债务项（本地模式）
 询问用户分析模式：
@@ -17,10 +17,10 @@ description: 量化技术债务并生成治理路线图，支持多语言、Sona
 - **增量分析**: 只分析自上次以来的变更文件（需提供 since_commit，如 `HEAD~5`）
 
 调用工具：
-- `compute_complexity_tool`（传入 since_commit）
-- `detect_code_smells_tool`（基础坏味检测）
-- `detect_advanced_smells_tool`（高级坏味检测：深层嵌套、魔法数字、长参数列表等）
-- 若用户提供 JaCoCo 报告，调用 `calculate_coverage_tool`
+- `compute_complexity`（传入 since_commit）
+- `detect_code_smells`（基础坏味检测）
+- `detect_advanced_smells`（高级坏味检测：深层嵌套、魔法数字、长参数列表等）
+- 若用户提供 JaCoCo 报告，调用 `calculate_coverage`
 
 ### 步骤 2: 补充业务影响
 - 自动从 Git 历史获取文件修改频率（调用内部 `get_modification_frequency`）。
@@ -32,7 +32,7 @@ description: 量化技术债务并生成治理路线图，支持多语言、Sona
 
 ### 步骤 4: 生成治理路线图
 - 询问 Sprint 容量和周期。
-- 调用 `generate_roadmap_tool` 输出计划。
+- 调用 `generate_roadmap` 输出计划。
 
 ### 步骤 5: 输出与可视化
 询问用户输出格式：
@@ -43,8 +43,8 @@ description: 量化技术债务并生成治理路线图，支持多语言、Sona
 - **可视化仪表板**: 交互式图表报告
 
 调用相应工具：
-- `format_output_tool`（JSON/Markdown/HTML/CSV）
-- `generate_dashboard_tool`（可视化仪表板）
+- `format_output`（JSON/Markdown/HTML/CSV）
+- `generate_dashboard`（可视化仪表板）
 
 ### 步骤 6: 导出与后续
 - 询问是否导出 Jira CSV及其他输出的文件
