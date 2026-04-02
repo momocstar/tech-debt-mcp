@@ -58,9 +58,20 @@ build.bat
 
 ## 配置
 
-### 方式一：使用 Python 直接运行
+### 运行模式说明
 
-编辑 `~/.claude/settings.json`：
+本项目支持两种运行模式：
+
+| 模式 | 说明 | 启动方式 |
+|------|------|----------|
+| **MCP Server 模式** | 作为 MCP 服务运行，通过 stdio 通信 | 无参数启动 |
+| **CLI 模式** | 命令行直接调用，输出 JSON 结果 | 带命令参数启动 |
+
+### MCP Server 模式配置
+
+编辑 `~/.claude/settings.json` 或项目目录下的 `.mcp.json`：
+
+#### 方式一：使用 Python 直接运行（推荐开发时使用）
 
 ```json
 {
@@ -79,7 +90,9 @@ build.bat
 }
 ```
 
-### 方式二：使用可执行文件
+**优点**：修改代码后无需重新编译，适合开发调试
+
+#### 方式二：使用编译后的可执行文件（推荐生产使用）
 
 ```json
 {
@@ -95,6 +108,45 @@ build.bat
     }
   }
 }
+```
+
+**优点**：启动更快，无需 Python 环境
+
+#### 完整配置示例（包含 Skills）
+
+```json
+{
+  "skills": {
+    "paths": ["/path/to/tech-debt-mcp/skills"]
+  },
+  "mcpServers": {
+    "tech-debt": {
+      "command": "/path/to/tech-debt-mcp/dist/tech-debt-mcp",
+      "env": {
+        "CKJM_JAR": "/path/to/tech-debt-mcp/ckjm-1.9.jar",
+        "ANTHROPIC_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+### MCP Server 工作原理
+
+当无参数启动时，server.py 会进入 stdio 监听模式：
+
+```python
+# server.py 中的 MCP Server 启动逻辑
+async def run_mcp():
+    async with stdio_server() as (read_stream, write_stream):
+        await server.run(read_stream, write_stream, None)
+
+# 无参数时自动启动 MCP Server
+if __name__ == "__main__":
+    if args.command:
+        run_cli(args)      # CLI 模式
+    else:
+        asyncio.run(run_mcp())  # MCP Server 模式
 ```
 
 ## MCP 工具
