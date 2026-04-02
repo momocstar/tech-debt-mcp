@@ -13,7 +13,7 @@ from tools.roadmap import generate_roadmap
 from tools.sonarqube import get_sonarqube_metrics
 from tools.ai_suggestions import generate_refactor_suggestions
 from tools.advanced_smells import detect_advanced_smells
-from tools.incremental_analyzer import IncrementalAnalyzer
+from tools.incremental_analyzer import IncrementalAnalyzer, run_full_analysis
 from exporters import OutputFormatter
 from dashboard import DashboardGenerator
 sys.path.insert(0, os.path.dirname(__file__))
@@ -233,7 +233,7 @@ async def call_tool(name: str, arguments: dict) -> List[TextContent]:
                 since_commit=arguments.get("since_commit")
             )
         elif name == "run_full_analysis":
-            result = IncrementalAnalyzer.run_full_analysis(arguments["project_path"])
+            result = run_full_analysis(arguments["project_path"])
         elif name == "format_output":
             data = json.loads(arguments["data_json"])
             format_type = arguments["format"]
@@ -327,7 +327,7 @@ def run_cli(args):
             since_commit=args.since_commit
         )
     elif args.command == "full-analysis":
-        result = IncrementalAnalyzer.run_full_analysis(args.project_path)
+        result = run_full_analysis(args.project_path)
     elif args.command == "format":
         data = json.loads(args.data_json)
         formatter = OutputFormatter()

@@ -5,6 +5,16 @@ description: 量化技术债务并生成治理路线图，支持多语言、Sona
 
 # Tech Debt Visualizer
 
+## 快速入口
+
+用户可直接说以下任一指令，自动执行完整流程：
+
+| 指令 | 行为 |
+|------|------|
+| "分析技术债" | 本地分析 → 优先级排序 → 展示 Top 10 |
+| "生成报告" | 分析 → 生成 HTML 仪表板 |
+| "增量分析" | 分析最近变更文件的技术债 |
+
 ## 工作流
 
 ### 步骤 0: 数据源选择
@@ -73,6 +83,35 @@ description: 量化技术债务并生成治理路线图，支持多语言、Sona
 - `run_incremental_analysis` - 运行增量分析（基于上次状态）
 - `run_full_analysis` - 运行全量分析并保存状态
 
+## 结果解读
+
+| 债务类型 | 阈值 | 建议 |
+|----------|------|------|
+| 高复杂度方法 | 圈复杂度 > 15 | 拆分为多个小方法 |
+| 重复代码 | 相似度 > 80% 且 >= 10 行 | 提取公共方法/类 |
+| 上帝类 | 方法数 > 20 或行数 > 500 | 按职责拆分 |
+| 深层嵌套 | 嵌套深度 > 4 | 使用卫语句或提取方法 |
+| 长参数列表 | 参数数量 > 5 | 使用参数对象或建造者模式 |
+| 魔法数字 | 硬编码数字 | 提取为常量 |
+
+## 预设配置
+
+可通过环境变量切换预设：
+
+```bash
+# 严格模式（适合新项目）
+export MAX_CYCLOMATIC_COMPLEXITY=10
+export MIN_DUPLICATE_LINES=5
+
+# 宽松模式（适合遗留系统）
+export MAX_CYCLOMATIC_COMPLEXITY=20
+export MIN_DUPLICATE_LINES=20
+
+# CI 模式（只输出 JSON）
+export OUTPUT_FORMAT=json
+export MAX_ITEMS=50
+```
+
 ## 高级功能
 
 ### 1. 增量分析
@@ -132,7 +171,7 @@ export SINCE_COMMIT=HEAD~10
 用户: 分析这个项目的技术债务
 助手: 我将使用 Tech Debt Visualizer 来分析项目的技术债务。
 
-[调用工具执行分析]
+[调用 run_full_analysis]
 
 发现 15 个高复杂度方法，8 个代码坏味问题。
 建议优先处理以下 3 个高优先级债务项...
