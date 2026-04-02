@@ -23,6 +23,7 @@
 - **治理路线图** - 按 Sprint 规划重构计划
 - **SonarQube 集成** - 从 SonarQube 获取度量数据
 - **增量分析** - 支持只分析指定 commit 后的变更文件
+- **可视化仪表盘** - 基于 ECharts 的交互式数据可视化
 
 ## 快速开始
 
@@ -107,6 +108,64 @@ build.bat
 | `generate_roadmap` | 生成治理路线图 |
 | `get_sonarqube_metrics` | 从 SonarQube 获取数据 |
 | `generate_refactor_suggestions` | 生成 AI 重构建议 |
+
+## 可视化仪表盘
+
+### 功能特性
+
+- **多种图表类型**: 环形图、折线图、树图、桑基图
+- **数据筛选**: 按类型、优先级、文件路径、复杂度筛选
+- **数据钻取**: 点击图表查看详细信息
+- **数据导出**: 支持 PNG、Excel、PDF 格式导出
+- **响应式设计**: 支持桌面、平板、移动端
+
+### 使用方法
+
+1. 生成仪表盘报告:
+
+```python
+from dashboard import DashboardGenerator
+
+data = {
+    "items": [...]  # 技术债务数据
+}
+
+DashboardGenerator.generate_html_report(
+    data,
+    output_path="reports/dashboard.html",
+    title="技术债务分析报告"
+)
+```
+
+2. 在浏览器中打开 `reports/dashboard.html`
+
+### 文件结构
+
+```
+dashboard/
+├── index.html          # 主HTML模板
+├── css/
+│   └── dashboard.css   # 样式文件
+└── js/
+    ├── app.js          # 主应用逻辑
+    ├── utils/          # 工具函数
+    ├── charts/         # 图表组件
+    └── components/     # UI组件
+```
+
+### 技术栈
+
+- ECharts 5.5.1 - 数据可视化库
+- Spectre.css 0.5.9 - 轻量级CSS框架
+- 原生JavaScript ES6+ - 无框架依赖
+
+### 自定义
+
+如需自定义仪表盘样式或功能，可以修改：
+
+- `dashboard/css/dashboard.css` - 样式定制
+- `dashboard/js/components/` - 组件功能
+- `dashboard/js/charts/` - 图表配置
 
 ## 命令行使用（API 直接调用）
 
