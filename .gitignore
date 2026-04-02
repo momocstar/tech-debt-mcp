@@ -29,3 +29,7 @@ nbdist/
 /.vscode/
 /logs/
 /debt
+**/**.pyc
+
+### Worktrees ###
+.worktrees/
