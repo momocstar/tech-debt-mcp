@@ -21,6 +21,7 @@ a = Analysis(
         'mcp',
         'mcp.server',
         'mcp.server.stdio',
+        'mcp.server.models',
         'mcp.types',
         'lizard',
         'radon',

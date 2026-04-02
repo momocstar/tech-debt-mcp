@@ -438,10 +438,17 @@ def main():
         # 无参数时启动 MCP server
         import asyncio
         from mcp.server.stdio import stdio_server
+        from mcp.server import InitializationOptions
+        from mcp.types import ServerCapabilities, ToolsCapability
 
         async def run_mcp():
             async with stdio_server() as (read_stream, write_stream):
-                await server.run(read_stream, write_stream, None)
+                init_options = InitializationOptions(
+                    server_name="tech-debt",
+                    server_version="1.0.0",
+                    capabilities=ServerCapabilities(tools=ToolsCapability())
+                )
+                await server.run(read_stream, write_stream, init_options)
 
         asyncio.run(run_mcp())
 
